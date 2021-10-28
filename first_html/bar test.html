@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bar test</title>
+
+    <script src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+
+<body>
+    <script>
+        //1 数据
+        var i = 0;
+        var data = new Array(26).fill(undefined).map(function () {
+            i += 1;
+            return {
+                key: String.fromCharCode(64 + i),
+                value: Math.random() * 80 + 10
+            }
+        });
+
+        //2 画布
+        // var svg = d3.select('body')
+        //     .append('svg')  //向body标签中增加svg子元素
+        //     .attr({
+        //         "width": 700,
+        //         "height": 500
+        //     });
+        var svg = d3.select('body').
+            append('svg').
+            attr('width', 700).
+            attr('height', 500);
+        var margin = {
+            top: 20,
+            left: 40,
+            bottom: 20,
+            right: 0
+        };
+        var width = svg.attr('width') - margin.left - margin.right;
+        var height = svg.attr('height') - margin.top - margin.bottom;
+        //2.1 比例尺
+        var xScale = d3.scale.ordinal()
+            .domain(data.map(d => d.key))
+            .rangeRoundBands([0, width], 0.5);
+
+        var maxValue = d3.max(data, d => d.value);
+        var yScale = d3.scale.linear()
+            .domain([0, maxValue])
+            .range([height, 0]);
+
+        //2.2 坐标轴
+        var xAxis = d3.svg.axis()
+            .scale(xScale)
+            .orient('bottom')
+            .tickSize(1);
+
+        var yAxis = d3.svg.axis()
+            .scale(yScale)
+            .orient('left')
+            .tickSize(1);
+
+        //3、绘制坐标轴
+        svg.append('g')
+            .attr('class', 'x-axis')
+            .attr('transform', 'translate(' + margin.left + ',' + (margin.top + height) + ')')
+            .call(xAxis);
+
+        svg.append('g')
+            .attr('class', 'y-axis')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+            .call(yAxis);
+        //4、绘制数据
+        svg.append('g')
+            .attr('class', 'bars')
+            .selectAll('rect')
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr('width', xScale.rangeBand())
+            .attr('x', d => xScale(d.key))
+            .attr('y', d => yScale(d.value))
+            .attr('height', d => (height - yScale(d.value)))
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+            .attr('fill', 'steelblue')
+
+    </script>
+</body>
+
+</html>
