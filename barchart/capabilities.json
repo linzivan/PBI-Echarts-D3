@@ -1,4 +1,5 @@
 {
+    "supportsHighlight": true,
     "dataRoles": [
         {
             "displayName": "分组字段",

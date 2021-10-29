@@ -36,7 +36,7 @@ import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInst
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
-
+import ISelectionManager = powerbi.extensibility.ISelectionManager; //引入图表交互api
 import { VisualSettings } from "./settings";
 import * as d3 from "d3";   //引入d3
 
@@ -46,7 +46,9 @@ import * as d3 from "d3";   //引入d3
 interface DataPoint {
     category: string;
     value: number;
-    color: string;
+    color: string;  // 为图表上色
+    selectionId: powerbi.visuals.ISelectionId;  //增加数据交互
+    highlighted: boolean;    //高亮显示
 
 }
 
@@ -56,6 +58,7 @@ interface DataPoint {
 interface ViewModel {
     dataPoints: DataPoint[];
     maxValue: number;
+    highlights: boolean;
 }
 
 export class Visual implements IVisual {
@@ -68,7 +71,7 @@ export class Visual implements IVisual {
     private viewModel: ViewModel; //导入业务数据
     private xAxisGroup: d3.Selection<SVGElement>;   //定义x轴
     private yAxisGroup: d3.Selection<SVGElement>;   //定义y轴
-
+    private selectionManager: ISelectionManager;     //定义图表交互
     private margin = {      //定义位置
         left: 60,
         right: 20,
@@ -93,6 +96,8 @@ export class Visual implements IVisual {
         this.yAxisGroup = this.svg.
             append('g')
             .classed("y-axis", true);
+
+        this.selectionManager = this.host.createSelectionManager();
     }
 
     public update(options: VisualUpdateOptions) {
@@ -155,9 +160,22 @@ export class Visual implements IVisual {
             height: d => height - yscale(d.value) - this.margin.bottom,
             x: d => xscale(d.category),
             y: d => yscale(d.value),
-            fill: d => d.color
-        });
+            fill: d => d.color,
+        })
+            .style({
+                "fill-opacity": d => this.viewModel.highlights ? d.highlighted ? 1.0 : 0.5 : 1.0
+            });
 
+        bars.on("click", (d) => {
+            this.selectionManager.select(d.selectionId, true)
+                .then(ids => {
+                    bars.style({
+                        "fill-opacity": ids.length > 0 ?
+                            d => ids.indexOf(d.selectionId) >= 0 ? 1.0 : 0.5
+                            : 1.0
+                    });
+                });
+        })
         bars.exit()
             .remove();
 
@@ -180,8 +198,10 @@ export class Visual implements IVisual {
         let dv = options.dataViews;
         let viewModel: ViewModel = {
             dataPoints: [],
-            maxValue: 0
+            maxValue: 0,
+            highlights: false    // 初始化
         };
+
         if (!dv
             || !dv[0]
             || !dv[0].categorical
@@ -194,15 +214,24 @@ export class Visual implements IVisual {
         let view = dv[0].categorical;
         let categories = view.categories[0];
         let values = view.values[0];
+        let highlights = values.highlights;
+
         // let colorPalette:IColorPalette = this.host.colorPalette; //host:IVisualHost
         for (let i = 0, len = Math.max(categories.values.length, values.values.length); i < len; i++) {
             viewModel.dataPoints.push({
                 category: <string>categories.values[i],
                 value: <number>values.values[i],
-                color: this.host.colorPalette.getColor(<string>categories.values[i]).value
+                color: this.host.colorPalette.getColor(<string>categories.values[i]).value,
+                selectionId: this.host.createSelectionIdBuilder()
+                    .withCategory(categories, i)
+                    .createSelectionId(),
+                highlighted: highlights ? highlights[i] ? true : false : false
             })
         };
         viewModel.maxValue = d3.max(viewModel.dataPoints, d => d.value);
+        viewModel.highlights = viewModel.dataPoints.filter(
+            d => d.highlighted
+        ).length > 0;
         return viewModel;
     }
 }
