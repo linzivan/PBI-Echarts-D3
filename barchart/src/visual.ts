@@ -46,6 +46,8 @@ import * as d3 from "d3";   //引入d3
 interface DataPoint {
     category: string;
     value: number;
+    color: string;
+
 }
 
 /**
@@ -64,6 +66,16 @@ export class Visual implements IVisual {
     private svg: d3.Selection<SVGAElement>;
     private barGroup: d3.Selection<SVGAElement>;
     private viewModel: ViewModel; //导入业务数据
+    private xAxisGroup: d3.Selection<SVGElement>;   //定义x轴
+    private yAxisGroup: d3.Selection<SVGElement>;   //定义y轴
+
+    private margin = {      //定义位置
+        left: 60,
+        right: 20,
+        top: 40,
+        bottom: 40
+    }
+
     constructor(options: VisualConstructorOptions) {
         this.host = options.host;
         this.svg = d3.select(options.element)
@@ -74,41 +86,19 @@ export class Visual implements IVisual {
             .append("g")
             .classed("bar-group", true);
 
+        this.xAxisGroup = this.svg.
+            append('g')
+            .classed("x-axis", true);
 
+        this.yAxisGroup = this.svg.
+            append('g')
+            .classed("y-axis", true);
     }
 
     public update(options: VisualUpdateOptions) {
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
-        //console.log("构造函数")
-        //构造数据
-        // let data: DataPoint[] = [
-        //     {
-        //         category: "A",
-        //         value: 20
-        //     },
-        //     {
-        //         category: "B",
-        //         value: 30
-        //     },
-        //     {
-        //         category: "C",
-        //         value: 40
-        //     },
-        //     {
-        //         category: "D",
-        //         value: 60
-        //     },
-        //     {
-        //         category: "E",
-        //         value: 80
-        //     }
-        // ];
 
         this.viewModel = this.getViewModel(options);
-        // let viewModel: ViewModel = {
-        //     dataPoints: data,
-        //     maxValue: d3.max(data, d => d.value)    //json 里面的匿名函数
-        // };
 
         let width = options.viewport.width;
         let height = options.viewport.height;
@@ -122,11 +112,35 @@ export class Visual implements IVisual {
         // 比例尺
         let yscale = d3.scale.linear()
             .domain([0, this.viewModel.maxValue])
-            .range([height, 0]);
+            .range([height - this.margin.bottom, 0 + this.margin.top]);
 
         let xscale = d3.scale.ordinal()
             .domain(this.viewModel.dataPoints.map(d => d.category))
-            .rangeRoundBands([0, width], 0.5);
+            .rangeRoundBands([0 + this.margin.left, width], 0.5);
+
+        // 绘制坐标轴
+        let yAxis = d3.svg.axis()
+            .scale(yscale)
+            .orient("left")
+            .tickSize(1);
+
+        this.yAxisGroup
+            .call(yAxis)
+            .attr({
+                transform: "translate(" + this.margin.left + ",0)"
+            })
+
+        let xAxis = d3.svg.axis()
+            .scale(xscale)
+            .orient("bottom")
+            .tickSize(1);
+
+        this.xAxisGroup
+            .call(xAxis)
+            .attr({
+                transform: "translate(0," + (height - this.margin.bottom) + ")"
+            });
+
         // 绘制数据
         let bars = this.barGroup
             .selectAll(".bar")  // selectAll没有的话会进行创建
@@ -138,9 +152,10 @@ export class Visual implements IVisual {
 
         bars.attr({
             width: xscale.rangeBand(),
-            height: d => height - yscale(d.value),
+            height: d => height - yscale(d.value) - this.margin.bottom,
             x: d => xscale(d.category),
-            y: d => yscale(d.value)
+            y: d => yscale(d.value),
+            fill: d => d.color
         });
 
         bars.exit()
@@ -179,11 +194,12 @@ export class Visual implements IVisual {
         let view = dv[0].categorical;
         let categories = view.categories[0];
         let values = view.values[0];
-
+        // let colorPalette:IColorPalette = this.host.colorPalette; //host:IVisualHost
         for (let i = 0, len = Math.max(categories.values.length, values.values.length); i < len; i++) {
             viewModel.dataPoints.push({
                 category: <string>categories.values[i],
-                value: <number>values.values[i]
+                value: <number>values.values[i],
+                color: this.host.colorPalette.getColor(<string>categories.values[i]).value
             })
         };
         viewModel.maxValue = d3.max(viewModel.dataPoints, d => d.value);
