@@ -37,7 +37,7 @@ import ISelectionManager = powerbi.extensibility.ISelectionManager; //引入图�
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem; //引入图表工具提示api
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
-import { dataColorSettings, VisualSettings } from "./settings";
+import { dataColorSettings, VisualSettings } from "./settings";   //引入setting.ts文件
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import { dataViewObjects } from "powerbi-visuals-utils-dataviewutils";
 
@@ -45,29 +45,30 @@ import { dataViewObjects } from "powerbi-visuals-utils-dataviewutils";
 import * as echarts from "echarts";     //引入echarts
 import * as ecStat from 'echarts-stat'; //引入ecStat分析库
 
+type Array_Data = Array<[number, number]>;
 
 /**
  * 定义数据接口
  */
-// interface DataPoint [
-//     category: number,
-//     value: number;
-// ]
-type DataPoint = Array<[number, number]>;
-type color = string[];
-type selectionId = powerbi.visuals.ISelectionId;  //增加数据交互
-type legend = string[]
+interface DataPoint {
+    category: number;
+    value: number;
+    color: string;  // 为图表上色
+    selectionId: powerbi.visuals.ISelectionId;  //增加数据交互
+    highlighted: boolean;    //高亮显示
+    tooltips: VisualTooltipDataItem[]; //定义工具提示
+}
 /**
  * 定义视图接口
  */
 interface ViewModel {
-    dataPoints: DataPoint;
+    dataPoints: DataPoint[];
     maxValue: number;
-    color: color;
-    selectionId: selectionId;
-    legend: legend;  //增加散点和曲线名称
+    highlights: boolean;
+    Array_Data: Array_Data;
+    data_color: string[];
+    data_name: string[];
 }
-
 
 export class Visual implements IVisual {
     private settings: VisualSettings;
@@ -75,7 +76,6 @@ export class Visual implements IVisual {
     private viewModel: ViewModel; //导入业务数据
     private host: IVisualHost;  // PBI视觉对象，由可视化对象提供
     private selectionManager: ISelectionManager;     //定义图表交互
-
     constructor(options: VisualConstructorOptions) {
         this.target = options.element;
         this.host = options.host;
@@ -93,24 +93,25 @@ export class Visual implements IVisual {
 
         // echart初始化，使用html设置宽度比例
         let myChart = echarts.init(document.getElementById('main'));
-
-        console.log("数据点:", this.viewModel.dataPoints);
-        let data = this.viewModel.dataPoints;
-        let myRegression = ecStat.regression('polynomial', data, 4);
+        console.log(dataBox.categorical.values[0].source.displayName)
+        let myRegression = ecStat.regression('polynomial', this.viewModel.Array_Data, 3);
+        // console.log("myRegression.points", myRegression.points)
         let option = {
-            color: this.viewModel.color,
+            color: [this.settings.dataColor.scatter, this.settings.dataColor.line],
             tooltip: {
-                trigger: 'axis' as 'axis',
+                // trigger: 'axis' as 'axis',
+                trigger: 'item' as 'item',
                 axisPointer: {
                     type: 'cross' as 'cross'
                 }
+                // , formatter: 'x : {c0}<br />y : {c1}'
             },
             title: {
                 text: '多项式线性回归',
                 left: 'center',
                 // top: 16
             },
-            grid: { left: '5%', top: '10%', width: '92%', height: '85%' },
+            // grid: { left: '5%', top: '10%', width: '92%', height: '85%' },
             xAxis: {
                 show: this.settings.xAxis.show,
                 type: 'value' as 'value',
@@ -136,16 +137,18 @@ export class Visual implements IVisual {
                 }
             },
             series: [{
-                name: 'scatter',
+                // name: 'scatter',
+                name: dataBox.categorical.values[0].source.displayName,
                 type: 'scatter' as 'scatter',
                 label: {
                     emphasis: {
                         show: true
                     }
                 },
-                data: data
+                data: this.viewModel.Array_Data
             }, {
                 name: 'line',
+                // name: dataBox.categorical.values[0].source.displayName,
                 type: 'line' as 'line',
                 smooth: true,
                 showSymbol: false,
@@ -173,9 +176,8 @@ export class Visual implements IVisual {
                 }
             }]
         }
-
+        // console.log(options.dataViews[0].categorical.values.source.displayName)
         myChart.setOption(option);
-        // console.log(this.target.innerHTML)
     }
 
     private static parseSettings(dataView: DataView): VisualSettings {
@@ -214,36 +216,22 @@ export class Visual implements IVisual {
                 });
                 break;
             //显示图形默认颜色,应该只显示两个图例
-            case "actual_dataColor":
-                // for (let d = 0, len = this.viewModel.legend.length; d < len; d++) {
-                //     this.viewModel.legend.push(this.viewModel.legend[d])
+            case "dataColor":
                 objectEnumeration.push({
                     objectName: objectName,
-                    displayName: <string>this.viewModel.legend[0],
                     properties: {
-                        fill: {
+                        scatter: {
                             solid: {
-                                color: this.viewModel.color[0]
+                                color: this.settings.dataColor.scatter
+                            }
+                        },
+                        line: {
+                            solid: {
+                                color: this.settings.dataColor.line
                             }
                         }
-                    }
-                    , selector: this.viewModel.selectionId.getSelector()
-                });
-                break;
-            case "regression_dataColor":
-                // for (let d = 0, len = this.viewModel.legend.length; d < len; d++) {
-                //     this.viewModel.legend.push(this.viewModel.legend[d])
-                objectEnumeration.push({
-                    objectName: objectName,
-                    displayName: <string>this.viewModel.legend[1],
-                    properties: {
-                        fill: {
-                            solid: {
-                                color: this.viewModel.color[1]
-                            }
-                        }
-                    }
-                    , selector: this.viewModel.selectionId.getSelector()
+                    },
+                    selector: null
                 });
                 break;
             default: break;
@@ -261,9 +249,10 @@ export class Visual implements IVisual {
         let viewModel: ViewModel = {
             dataPoints: [],
             maxValue: 0,
-            color: [],
-            selectionId: undefined,
-            legend: []
+            highlights: false,    // 初始化
+            Array_Data: [],
+            data_color: ['#414fb1', '#eb895f'],      // 初始化数据颜色
+            data_name: ['实际数据颜色', '拟合曲线颜色'] // 初始化数据名称
         };
 
         if (!dv
@@ -280,37 +269,44 @@ export class Visual implements IVisual {
         let values = view.values[0];
         let highlights = values.highlights;
         let objects = categories.objects;
-        let legend_list = ["实际值", "拟合值"]
 
-        // console.log("categories.values", categories)
         // let colorPalette:IColorPalette = this.host.colorPalette; //host:IVisualHost
         for (let i = 0, len = Math.max(categories.values.length, values.values.length); i < len; i++) {
-            viewModel.dataPoints.push([
-                <number>categories.values[i],
-                <number>values.values[i],
-            ])
+            viewModel.dataPoints.push({
+                category: <number>categories.values[i],
+                value: <number>values.values[i],
+                color: objects && objects[i] && dataViewObjects.getFillColor(
+                    objects[i],
+                    {
+                        objectName: "dataColor",
+                        propertyName: "fill"
+                    },
+                    null
+                )
+                    || this.host.colorPalette.getColor(<string>categories.values[i]).value,
+                selectionId: this.host.createSelectionIdBuilder()
+                    .withCategory(categories, i)
+                    .createSelectionId(),
+                highlighted: highlights ? highlights[i] ? true : false : false,
+                tooltips: [
+                    {
+                        displayName: categories.source.displayName + ":",
+                        value: <string>categories.values[i]
+                    },
+                    {
+                        displayName: values.source.displayName + ":",
+                        value: (<number>values.values[i]).toString()
+                    }
+                ]
+            })
         };
-        for (let i = 0, len = 2; i < len; i++) {
-            viewModel.color.push(objects && objects[i] && dataViewObjects.getFillColor(objects[i],
-                {
-                    objectName: "dataColor",
-                    propertyName: "fill"
-                },
-                null
-            )
-                || this.host.colorPalette.getColor(<string>categories.values[i]).value
-            )
-        };
-        for (let i = 0, len = 3; i < len; i++) {
-            viewModel.legend.push(legend_list[i])
-            viewModel.selectionId = this.host.createSelectionIdBuilder()
-                .withCategory(categories, i)
-                .createSelectionId()
-        };
-        // console.log("viewModel.selectionId选择器", viewModel.legend)
+        // 构建二维数组
+        for (let i = 0, len = Math.max(categories.values.length, values.values.length); i < len; i++) {
+            viewModel.Array_Data.push([<number>categories.values[i], <number>values.values[i]])
+        }
+        // 取数据最大值，确定y轴上限
         viewModel.maxValue = <number>values.maxLocal * 1.2;
-        // console.log("values", <number>values.maxLocal * 1.2);
-        // console.log(viewModel)
+
         return viewModel;
     }
 }

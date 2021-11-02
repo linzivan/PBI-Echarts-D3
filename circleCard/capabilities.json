@@ -84,10 +84,10 @@
                 }
             }
         },
-        "actual_dataColor": {
-            "displayName": "实际数据颜色",
+        "dataColor": {
+            "displayName": "数据颜色",
             "properties": {
-                "fill": {
+                "scatter": {
                     "displayName": "实际数据颜色",
                     "type": {
                         "fill": {
@@ -96,14 +96,9 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "regression_dataColor": {
-            "displayName": "拟合数据颜色",
-            "properties": {
-                "fill": {
-                    "displayName": "拟合实际数据颜色",
+                },
+                "line": {
+                    "displayName": "拟合曲线颜色",
                     "type": {
                         "fill": {
                             "solid": {

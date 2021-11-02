@@ -52,7 +52,6 @@ interface DataPoint {
     selectionId: powerbi.visuals.ISelectionId;  //增加数据交互
     highlighted: boolean;    //高亮显示
     tooltips: VisualTooltipDataItem[]; //定义工具提示
-
 }
 
 /**

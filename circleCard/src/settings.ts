@@ -33,8 +33,7 @@ export class VisualSettings extends DataViewObjectsParser {
   public dataPoint: dataPointSettings = new dataPointSettings();
   public xAxis: xAxisSettings = new xAxisSettings();
   public yAxis: yAxisSettings = new yAxisSettings();
-  public actual_dataColor: dataColorSettings = new dataColorSettings();
-  public regression_dataColor: dataColorSettings = new dataColorSettings();
+  public dataColor: dataColorSettings = new dataColorSettings();
 }
 
 export class dataPointSettings {
@@ -49,6 +48,7 @@ export class dataPointSettings {
   // Text Size
   public fontSize: number = 12;
 }
+
 export class xAxisSettings {
   public show: boolean = true;
 }
@@ -57,10 +57,10 @@ export class yAxisSettings {
   public show: boolean = true;
 }
 
-export class actual_dataColorSettings {
-  public fill: string = "";
+export class dataColorSettings {
+  // 散点数据颜色
+  public scatter: string = '#414fb1';
+  // 拟合曲线颜色
+  public line: string = '#eb895f';
 }
 
-export class dataColorSettings {
-  public fill: string = "";
-}
