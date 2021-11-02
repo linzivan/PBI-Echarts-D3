@@ -37,8 +37,10 @@ import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataView = powerbi.DataView;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 import ISelectionManager = powerbi.extensibility.ISelectionManager; //引入图表交互api
-import { VisualSettings } from "./settings";
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem; //引入图表工具提示api
+import { dataColorSettings, VisualSettings } from "./settings";
 import * as d3 from "d3";   //引入d3
+import { dataViewObjects } from "powerbi-visuals-utils-dataviewutils";
 
 /**
  * 定义数据接口
@@ -49,6 +51,7 @@ interface DataPoint {
     color: string;  // 为图表上色
     selectionId: powerbi.visuals.ISelectionId;  //增加数据交互
     highlighted: boolean;    //高亮显示
+    tooltips: VisualTooltipDataItem[]; //定义工具提示
 
 }
 
@@ -73,7 +76,7 @@ export class Visual implements IVisual {
     private yAxisGroup: d3.Selection<SVGElement>;   //定义y轴
     private selectionManager: ISelectionManager;     //定义图表交互
     private margin = {      //定义位置
-        left: 60,
+        left: 55,
         right: 20,
         top: 40,
         bottom: 40
@@ -108,6 +111,10 @@ export class Visual implements IVisual {
         let width = options.viewport.width;
         let height = options.viewport.height;
 
+        let xAxispadding = this.settings.xAxis.show ? this.margin.bottom : 10;
+        let xAxisTextVisible = this.settings.xAxis.show ? "visible" : "hidden";
+        // console.log(xAxispadding)
+
         // svg大小，整个视觉对象大小
         this.svg.attr({
             width: width,
@@ -117,7 +124,7 @@ export class Visual implements IVisual {
         // 比例尺
         let yscale = d3.scale.linear()
             .domain([0, this.viewModel.maxValue])
-            .range([height - this.margin.bottom, 0 + this.margin.top]);
+            .range([height - xAxispadding, 0 + this.margin.top]);
 
         let xscale = d3.scale.ordinal()
             .domain(this.viewModel.dataPoints.map(d => d.category))
@@ -143,8 +150,13 @@ export class Visual implements IVisual {
         this.xAxisGroup
             .call(xAxis)
             .attr({
-                transform: "translate(0," + (height - this.margin.bottom) + ")"
-            });
+                transform: "translate(0," + (height - xAxispadding) + ")"
+            })
+            .selectAll("text")
+            .style({
+                "visibility": xAxisTextVisible
+            })
+            ;
 
         // 绘制数据
         let bars = this.barGroup
@@ -157,25 +169,63 @@ export class Visual implements IVisual {
 
         bars.attr({
             width: xscale.rangeBand(),
-            height: d => height - yscale(d.value) - this.margin.bottom,
+            height: d => height - yscale(d.value) - xAxispadding,
             x: d => xscale(d.category),
             y: d => yscale(d.value),
             fill: d => d.color,
         })
             .style({
-                "fill-opacity": d => this.viewModel.highlights ? d.highlighted ? 1.0 : 0.5 : 1.0
+                "fill-opacity": d => this.viewModel.highlights ? d.highlighted ? 1.0 : 0.2 : 1.0
             });
 
         bars.on("click", (d) => {
-            this.selectionManager.select(d.selectionId, true)
+            this.selectionManager.select(d.selectionId, false)   //第一个参数为选择数据ID，第二个为是否开启多选
                 .then(ids => {
                     bars.style({
                         "fill-opacity": ids.length > 0 ?
-                            d => ids.indexOf(d.selectionId) >= 0 ? 1.0 : 0.5
+                            d => ids.indexOf(d.selectionId) >= 0 ? 1.0 : 0.2
                             : 1.0
                     });
                 });
         })
+            .on("mouseover", (d) => {
+                let mouse = d3.mouse(this.svg.node());
+                let x = mouse[0];
+                let y = mouse[1];
+                this.host.tooltipService.show(
+                    {
+                        dataItems: d.tooltips,
+                        identities: [d.category, d.value],
+                        coordinates: [x, y],
+                        isTouchEvent: false
+                    }
+                )
+            })
+            .on("mouseout", d => {
+                this.host.tooltipService.hide({
+                    immediately: true,
+                    isTouchEvent: false
+                })
+            })
+            .on("mouseout", d => {
+                this.host.tooltipService.hide({
+                    immediately: true,
+                    isTouchEvent: false
+                })
+            })
+            .on("mousemove", (d) => {
+                let mouse = d3.mouse(this.svg.node());
+                let x = mouse[0];
+                let y = mouse[1];
+                this.host.tooltipService.move(
+                    {
+                        dataItems: d.tooltips,
+                        identities: [d.category, d.value],
+                        coordinates: [x, y],
+                        isTouchEvent: false
+                    }
+                )
+            });
         bars.exit()
             .remove();
 
@@ -191,7 +241,58 @@ export class Visual implements IVisual {
      *
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
+        // return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
+        //     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstanceEnumeration {
+        //     let objectName: string = options.objectName;
+        //     let objectEnumeration: VisualObjectInstance[] = [];
+
+        //     switch (objectName) {
+        //         case 'myCustomObject':
+        //             objectEnumeration.push({
+        //                 objectName: objectName,
+        //                 properties: { ... },
+        //                 selector: { ... }
+        //             });
+        //             break;
+        //     };
+
+        //     return objectEnumeration;
+        // }
+        let objectName = options.objectName;
+        let objectEnumeration: VisualObjectInstance[] = [];
+
+        switch (objectName) {
+            //显示x坐标轴
+            case "xAxis":
+                objectEnumeration.push({
+                    objectName: objectName,
+                    properties: {
+                        show: this.settings.xAxis.show
+                    },
+                    selector: null
+                });
+                break;
+            //显示图形默认颜色
+            case "dataColor":
+                for (let d of this.viewModel.dataPoints) {
+                    objectEnumeration.push({
+                        objectName: objectName,
+                        displayName: d.category,
+                        properties: {
+                            fill: {
+                                solid: {
+                                    color: d.color
+                                }
+                            }
+                        },
+                        selector: d.selectionId.getSelector()
+                    });
+                }
+                break;
+            default: break;
+        }
+
+        return objectEnumeration;
     }
 
     private getViewModel(options: VisualUpdateOptions): ViewModel {
@@ -215,19 +316,39 @@ export class Visual implements IVisual {
         let categories = view.categories[0];
         let values = view.values[0];
         let highlights = values.highlights;
+        let objects = categories.objects;
 
         // let colorPalette:IColorPalette = this.host.colorPalette; //host:IVisualHost
         for (let i = 0, len = Math.max(categories.values.length, values.values.length); i < len; i++) {
             viewModel.dataPoints.push({
                 category: <string>categories.values[i],
                 value: <number>values.values[i],
-                color: this.host.colorPalette.getColor(<string>categories.values[i]).value,
+                color: objects && objects[i] && dataViewObjects.getFillColor(
+                    objects[i],
+                    {
+                        objectName: "dataColor",
+                        propertyName: "fill"
+                    },
+                    null
+                )
+                    || this.host.colorPalette.getColor(<string>categories.values[i]).value,
                 selectionId: this.host.createSelectionIdBuilder()
                     .withCategory(categories, i)
                     .createSelectionId(),
-                highlighted: highlights ? highlights[i] ? true : false : false
+                highlighted: highlights ? highlights[i] ? true : false : false,
+                tooltips: [
+                    {
+                        displayName: categories.source.displayName + ":",
+                        value: <string>categories.values[i]
+                    },
+                    {
+                        displayName: values.source.displayName + ":",
+                        value: (<number>values.values[i]).toString()
+                    }
+                ]
             })
         };
+        // console.log(viewModel);
         viewModel.maxValue = d3.max(viewModel.dataPoints, d => d.value);
         viewModel.highlights = viewModel.dataPoints.filter(
             d => d.highlighted

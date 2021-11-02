@@ -30,19 +30,37 @@ import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
 import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
 export class VisualSettings extends DataViewObjectsParser {
-      public dataPoint: dataPointSettings = new dataPointSettings();
-      }
+  public dataPoint: dataPointSettings = new dataPointSettings();
+  public xAxis: xAxisSettings = new xAxisSettings();
+  public yAxis: yAxisSettings = new yAxisSettings();
+  public actual_dataColor: dataColorSettings = new dataColorSettings();
+  public regression_dataColor: dataColorSettings = new dataColorSettings();
+}
 
-    export class dataPointSettings {
-     // Default color
-      public defaultColor: string = "";
-     // Show all
-      public showAllDataPoints: boolean = true;
-     // Fill
-      public fill: string = "";
-     // Color saturation
-      public fillRule: string = "";
-     // Text Size
-      public fontSize: number = 12;
-     }
+export class dataPointSettings {
+  // Default color
+  public defaultColor: string = "";
+  // Show all
+  public showAllDataPoints: boolean = true;
+  // Fill
+  public fill: string = "";
+  // Color saturation
+  public fillRule: string = "";
+  // Text Size
+  public fontSize: number = 12;
+}
+export class xAxisSettings {
+  public show: boolean = true;
+}
 
+export class yAxisSettings {
+  public show: boolean = true;
+}
+
+export class actual_dataColorSettings {
+  public fill: string = "";
+}
+
+export class dataColorSettings {
+  public fill: string = "";
+}

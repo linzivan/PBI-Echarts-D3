@@ -1,22 +1,27 @@
 {
     "dataRoles": [
         {
-            "displayName": "Category Data",
+            "displayName": "自变量-X",
             "name": "category",
             "kind": "Grouping"
         },
         {
-            "displayName": "Measure Data",
+            "displayName": "因变量-Y",
             "name": "measure",
+            "kind": "Measure"
+        },
+        {
+            "displayName": "调节因子-Z",
+            "name": "adjust",
             "kind": "Measure"
         }
     ],
     "objects": {
         "dataPoint": {
-            "displayName": "Data colors",
+            "displayName": "data color",
             "properties": {
                 "defaultColor": {
-                    "displayName": "Default color",
+                    "displayName": "默认颜色",
                     "type": {
                         "fill": {
                             "solid": {
@@ -47,11 +52,63 @@
                         "fill": {}
                     }
                 },
-                 "fontSize": {
+                "fontSize": {
                     "displayName": "Text Size",
                     "type": {
                         "formatting": {
                             "fontSize": true
+                        }
+                    }
+                }
+            }
+        },
+        "xAxis": {
+            "displayName": "X 坐标轴",
+            "properties": {
+                "show": {
+                    "displayName": "显示坐标轴",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
+        "yAxis": {
+            "displayName": "Y 坐标轴",
+            "properties": {
+                "show": {
+                    "displayName": "显示坐标轴",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
+        "actual_dataColor": {
+            "displayName": "实际数据颜色",
+            "properties": {
+                "fill": {
+                    "displayName": "实际数据颜色",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "regression_dataColor": {
+            "displayName": "拟合数据颜色",
+            "properties": {
+                "fill": {
+                    "displayName": "拟合实际数据颜色",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
                         }
                     }
                 }

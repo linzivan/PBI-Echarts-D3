@@ -12,6 +12,11 @@
             "kind": "Measure"
         }
     ],
+    "drilldown": {
+        "roles": [
+            "category"
+        ]
+    },
     "objects": {
         "dataPoint": {
             "displayName": "Data colors",
@@ -53,6 +58,32 @@
                     "type": {
                         "formatting": {
                             "fontSize": true
+                        }
+                    }
+                }
+            }
+        },
+        "xAxis": {
+            "displayName": "X 坐标轴",
+            "properties": {
+                "show": {
+                    "displayName": "显示坐标轴",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        },
+        "dataColor": {
+            "displayName": "数据颜色",
+            "properties": {
+                "fill": {
+                    "displayName": "颜色",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
                         }
                     }
                 }

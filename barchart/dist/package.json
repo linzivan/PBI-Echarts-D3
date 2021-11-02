@@ -1,0 +1,17 @@
+{
+    "version": "1.0.0",
+    "author": {"name":"mabotech","email":"mabotech.com"},
+    "resources": [
+        {
+            "resourceId": "rId0",
+            "sourceType": 5,
+            "file": "resources/barchartD0C580BCFBF3464DBB5A26877B432771.pbiviz.json"
+        }
+    ],
+    "visual": {"name":"barchart","displayName":"Barchart","guid":"barchartD0C580BCFBF3464DBB5A26877B432771","visualClassName":"Visual","version":"1.0.0","description":"示例1-自定义柱状图","supportUrl":"mabotech.com","gitHubUrl":"mabotech.com"},
+    "metadata": {
+        "pbivizjson": {
+            "resourceId": "rId0"
+        }
+    }  
+}

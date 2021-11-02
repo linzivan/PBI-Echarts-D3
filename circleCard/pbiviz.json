@@ -17,9 +17,10 @@
     "assets": {
         "icon": "assets/icon.png"
     },
-    "externalJS": {
-        "circleCard/node_modules/d3/d3.min.js"
-    },
+    "externalJS": [
+        "node_modules/echarts/dist/echarts.js",
+        "node_modules/echarts-stat/dist/ecStat.js"
+    ],
     "style": "style/visual.less",
     "capabilities": "capabilities.json",
     "dependencies": null,

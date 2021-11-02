@@ -5,17 +5,17 @@
         "guid": "barchartD0C580BCFBF3464DBB5A26877B432771",
         "visualClassName": "Visual",
         "version": "1.0.0",
-        "description": "",
-        "supportUrl": "",
-        "gitHubUrl": ""
+        "description": "示例1-自定义柱状图",
+        "supportUrl": "mabotech.com",
+        "gitHubUrl": "mabotech.com"
     },
     "apiVersion": "3.8.0",
     "author": {
-        "name": "",
-        "email": ""
+        "name": "mabotech",
+        "email": "mabotech.com"
     },
     "assets": {
-        "icon": "assets/icon.png"
+        "icon": "assets/barchart.png"
     },
     "externalJS": [
         "node_modules/d3/d3.min.js"
